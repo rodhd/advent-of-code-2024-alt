@@ -1,51 +1,12 @@
 package org.example.Solutions
 
 import org.example.Common.AoCSolution
+import java.awt.Point
+import java.io.InvalidObjectException
 
 class Day6 : AoCSolution() {
     override val day: String
         get() = "6"
-
-    enum class Direction {
-        NORTH {
-            override fun value() = Pair(-1,0)
-            override fun next() = EAST
-        },
-        SOUTH {
-            override fun value() = Pair(1,0)
-            override fun next() = WEST
-        },
-        WEST {
-            override fun value() = Pair(0,-1)
-            override fun next() = NORTH
-        },
-        EAST {
-            override fun value() = Pair(0,1)
-            override fun next() = SOUTH
-        };
-        abstract fun value(): Pair<Int, Int>
-        abstract fun next(): Direction
-    }
-
-    class PosDir constructor(row: Int, col: Int, dir: Direction) {
-        val row = row
-        val col = col
-        val dir = dir
-
-        fun getPosition(): Pair<Int, Int> = Pair(row, col)
-
-        fun rotate() = PosDir(row, col, dir.next())
-
-        fun vector() = "r${row}c${col}d${dir.name}"
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is PosDir) return false
-
-            // Compares properties for structural equality
-            return this.row == other.row && this.col == other.col && this.dir == other.dir
-        }
-    }
 
     override fun FirstSolution() {
         val input = readInputAsListOfLines()
@@ -60,98 +21,163 @@ class Day6 : AoCSolution() {
     }
 
     fun CalculateFirst(input: List<String>): Int {
-        val obstacles = _getCoordinates(input, '#').map{x -> "r${x.first}c${x.second}"}.toSet()
-        val guard = _getCoordinates(input, '^').map{x -> PosDir(x.first, x.second, Direction.NORTH)}
-        val guardPath = _runSimulation(input, obstacles, guard)
-        return guardPath.groupBy { it.getPosition() }.size - 1
+        var copy = input.toList()
+        val maxX = input.lastIndex
+        val maxY = input.first().lastIndex
+        copy = _runSimulation(copy, maxX, maxY)
+        return copy.sumOf { x -> x.count { y -> y == '-' || y == '|' } }
     }
 
     fun CalculateSecond(input: List<String>): Int {
-        val obstacles = _getCoordinates(input, '#').map{x -> "r${x.first}c${x.second}"}.toSet()
-        val guard = _getCoordinates(input, '^').map{x -> PosDir(x.first, x.second, Direction.NORTH)}
-        val guardPath = _runSimulation(input, obstacles, guard).toMutableList()
-        var temp = guardPath.removeLast()
-        val encounters = emptySet<String>().toMutableSet()
-        while(guardPath.size > 1) {
-            if(encounters.size % 10 == 0) {
-                print("${guardPath.size}\n")
-            }
-            if(_isNewObstacleALoop(input, obstacles, guardPath, temp.getPosition())) {
-                encounters.add("r${temp.row}c${temp.col}")
-            }
-            temp = guardPath.removeLast()
-        }
-        return encounters.size
-    }
-
-    private fun _getCoordinates(input: List<String>, target: Char): List<Pair<Int, Int>> {
-        var result = mutableListOf<Pair<Int, Int>>()
-        for (i in input.indices) {
-            for (j in input[i].indices) {
-                if (input[i][j] == target) {
-                    result.add(Pair(i, j))
-                }
-            }
-        }
+        val copy = input.toList()
+        val maxX = input.lastIndex
+        val maxY = input.first().lastIndex
+        val result = _findLoops(copy, maxX, maxY)
         return result
     }
 
-    private fun _runSimulation(
+    private fun _getCurrentLoc(input: List<String>): Point {
+        for (i in input.indices) {
+            for (j in input[i].indices) {
+                when (input[i][j]) {
+                    '^' -> return Point(i, j)
+                    '>' -> return Point(i, j)
+                    'v' -> return Point(i, j)
+                    '<' -> return Point(i, j)
+                    else -> continue
+                }
+            }
+        }
+        return Point(9999, 9999)
+    }
+
+    private fun _getNextStep(input: List<String>, loc: Point): Point {
+        val currentDir = input[loc.x][loc.y]
+        return when (currentDir) {
+            '^' -> Point(loc.x - 1, loc.y)
+            '>' -> Point(loc.x, loc.y + 1)
+            'v' -> Point(loc.x + 1, loc.y)
+            '<' -> Point(loc.x, loc.y - 1)
+            else -> loc
+        }
+    }
+
+    private fun _isNextStepBlocked(input: List<String>, loc: Point, maxX: Int, maxY: Int): Boolean {
+        if (!(loc.x in 0..maxX && loc.y in 0..maxY)) {
+            return false
+        }
+        return input[loc.x][loc.y] == '#'
+    }
+
+    private fun _rotateGuard(input: List<String>, loc: Point): List<String> {
+        val currentDir = input[loc.x][loc.y]
+        val copy = input.toMutableList()
+        when (currentDir) {
+            '^' -> copy[loc.x] = updateCharacterInString(copy[loc.x], loc.y, '>')
+            '>' -> copy[loc.x] = updateCharacterInString(copy[loc.x], loc.y, 'v')
+            'v' -> copy[loc.x] = updateCharacterInString(copy[loc.x], loc.y, '<')
+            '<' -> copy[loc.x] = updateCharacterInString(copy[loc.x], loc.y, '^')
+        }
+        return copy
+    }
+
+    private fun _updateMap(
         input: List<String>,
-        obstacles: Set<String>,
-        guard: List<PosDir>
-    ): List<PosDir> {
-        val maxX = input.lastIndex
-        val maxY = input.first().lastIndex
-        var nextPosition: PosDir
+        currentStep: Point,
+        nextStep: Point,
+        maxX: Int,
+        maxY: Int
+    ): List<String> {
+        val copy = input.toMutableList()
+        val currentDir = copy[currentStep.x][currentStep.y]
+        when (currentDir) {
+            '^' -> copy[currentStep.x] = updateCharacterInString(copy[currentStep.x], currentStep.y, '|')
+            '>' -> copy[currentStep.x] = updateCharacterInString(copy[currentStep.x], currentStep.y, '-')
+            'v' -> copy[currentStep.x] = updateCharacterInString(copy[currentStep.x], currentStep.y, '|')
+            '<' -> copy[currentStep.x] = updateCharacterInString(copy[currentStep.x], currentStep.y, '-')
+        }
+        if (nextStep.x in 0..maxX && nextStep.y in 0..maxY) {
+            copy[nextStep.x] = updateCharacterInString(copy[nextStep.x], nextStep.y, currentDir)
+        }
 
-        val guardPath = guard.toMutableList()
+        return copy
+
+    }
+
+    private fun _runSimulation(input: List<String>, maxX: Int, maxY: Int): List<String> {
+        var copy = input.toList()
+        var guard = _getCurrentLoc(copy)
         do {
-            nextPosition = _calculateNextPosition(guardPath.last())
-            while (_isNextPositionAnObstacle(nextPosition, obstacles)) {
-                val temp = guardPath.last().rotate()
-                guardPath.dropLast(1)
-                guardPath.add(temp)
-                nextPosition = _calculateNextPosition(guardPath.last())
+            val nextStep = _getNextStep(copy, guard)
+            if (_isNextStepBlocked(input, nextStep, maxX, maxY)) {
+                copy = _rotateGuard(copy, guard).toList()
+            } else {
+                copy = _updateMap(copy, guard, nextStep, maxX, maxY).toList()
+                guard = _getCurrentLoc(copy)
             }
-            guardPath.add(nextPosition)
-        } while ((guardPath.last().row in 0..maxX && guardPath.last().col in 0..maxY))
-        return guardPath
+        } while (guard.x in 0..maxX && guard.y in 0..maxY)
+        return copy
     }
 
-    private fun _isNewObstacleALoop(
-        input: List<String>,
-        obstacles: Set<String>,
-        guard: List<PosDir>,
-        newObstacle: Pair<Int, Int>
-    ): Boolean {
-        val maxX = input.lastIndex
-        val maxY = input.first().lastIndex
-        val newObstacles = obstacles.toMutableSet()
-        newObstacles.add("r${newObstacle.first}c${newObstacle.second}")
-        var nextPosition: PosDir
-        val guardPath = guard.toMutableList()
-        do {
-            nextPosition = _calculateNextPosition(guardPath.last())
-            while (_isNextPositionAnObstacle(nextPosition, newObstacles)) {
-                val temp = guardPath.last().rotate()
-                guardPath.removeLast()
-                guardPath.add(temp)
-                nextPosition = _calculateNextPosition(guardPath.last())
+    private fun _findLoops(input: List<String>, maxX: Int, maxY: Int): Int {
+        var counter = 0
+        val start = _getCurrentLoc(input)
+        val copy = _runSimulation(input, maxX, maxY)
+        val path = emptySet<Point>().toMutableSet()
+        for (i in copy.indices) {
+            for (j in copy[i].indices) {
+                if (copy[i][j] == '|' || copy[i][j] == '-') {
+                    path.add(Point(i, j))
+                }
             }
-            if (guardPath.map{x -> x.vector()}.toSet().contains(nextPosition.vector()) || guardPath.size > 130*130) {
-                return true
+        }
+        path.remove(Point(start.x-1, start.y))
+        path.remove(Point(start.x, start.y))
+        for (p in path) {
+            val newMap = input.toMutableList()
+            newMap[p.x] = updateCharacterInString(newMap[p.x], p.y, '#')
+            if(_runLoopSimulation(newMap, maxX, maxY)) {
+                counter++
             }
-            guardPath.add(nextPosition)
-        } while ((guardPath.last().row in 0..maxX && guardPath.last().col in 0..maxY))
-        return false
+            if(counter % 100 == 0) {
+                print("counter:${counter}\n")
+            }
+        }
+        return counter
     }
 
-    private fun _calculateNextPosition(posDir: PosDir): PosDir {
-        return PosDir(posDir.row + posDir.dir.value().first, posDir.col + posDir.dir.value().second, posDir.dir)
+    private fun _runLoopSimulation(input: List<String>, maxX: Int, maxY: Int): Boolean {
+        var iter = 0
+        var copy = input.toList()
+        var guard = _getCurrentLoc(copy)
+        while (iter < 130 * 130) {
+            val nextStep = _getNextStep(copy, guard)
+            if (_isNextStepBlocked(input, nextStep, maxX, maxY)) {
+                copy = _rotateGuard(copy, guard).toList()
+            } else {
+                copy = _updateMap(copy, guard, nextStep, maxX, maxY).toList()
+                guard = _getCurrentLoc(copy)
+                if(!(guard.x in 0..maxX && guard.y in 0..maxY)) {
+                    return false
+                }
+            }
+            iter++
+        }
+        return true
     }
 
-    private fun _isNextPositionAnObstacle(position: PosDir, obstacles: Set<String>): Boolean {
-        return obstacles.contains("r${position.row}c${position.col}")
+
+    fun updateCharacterInString(original: String, index: Int, newChar: Char): String {
+        // Ensure the index is valid
+        if (index < 0 || index >= original.length) {
+            throw IndexOutOfBoundsException("Index $index is out of bounds for length ${original.length}")
+        }
+
+        // Convert to a char array, update the character, and create a new string
+        val charArray = original.toCharArray()
+        charArray[index] = newChar
+
+        // Return the new modified string
+        return String(charArray)
     }
 }
