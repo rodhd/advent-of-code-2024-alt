@@ -22,11 +22,11 @@ class Day7 : AoCSolution() {
     }
 
     fun CalculateFirst(input: List<String>): BigInteger {
-        return input.sumOf{ x -> _evalutateTest(x)}
+        return input.sumOf { x -> _evalutateTest(x) }
     }
 
     fun CalculateSecond(input: List<String>): BigInteger {
-        return input.sumOf{ x -> _evaluateTestV2(x)}
+        return input.sumOf { x -> _evaluateTestV2(x) }
     }
 
     private fun _evalutateTest(test: String): BigInteger {
@@ -34,16 +34,16 @@ class Day7 : AoCSolution() {
         val parameters = test.split(": ").last().split(" ").map { x -> x.toBigInteger() }
         val operators = _generateOperationCombinations(parameters.size)
 
-        for(op in operators) {
+        for (op in operators) {
             var r = "0".toBigInteger()
             for (i in 0..parameters.lastIndex) {
-                if(op[i] == '+') {
+                if (op[i] == '+') {
                     r += parameters[i]
                 } else {
                     r *= parameters[i]
                 }
             }
-            if(r == result) {
+            if (r == result) {
                 return r
             }
         }
@@ -54,11 +54,13 @@ class Day7 : AoCSolution() {
     private fun _generateOperationCombinations(operators: Int): List<String> {
         val combinations = 2.0.pow(operators).toInt()
         val result = (0..combinations)
-            .map { x -> x
-                .toString(radix = 2)
-                .padStart(operators, '0')
-                .replace("0", "+")
-                .replace("1", "*") }
+            .map { x ->
+                x
+                    .toString(radix = 2)
+                    .padStart(operators, '0')
+                    .replace("0", "+")
+                    .replace("1", "*")
+            }
 
         return result
 
@@ -73,10 +75,10 @@ class Day7 : AoCSolution() {
 
         for (i in 0..<parameters.lastIndex) {
             val newEvals = emptyList<MutableList<String>>().toMutableList()
-            for((j, v) in possibleEvals.withIndex()) {
+            for ((j, v) in possibleEvals.withIndex()) {
                 val temp = _performOperation(parameters, v, i)
-                if(temp <= result) {
-                    for(o in operators) {
+                if (temp <= result) {
+                    for (o in operators) {
                         val t2 = v.toMutableList()
                         t2.add(o)
                         newEvals.add(t2)
@@ -85,10 +87,10 @@ class Day7 : AoCSolution() {
             }
             possibleEvals = newEvals.toMutableList()
         }
-        if(possibleEvals.size == 0){
+        if (possibleEvals.size == 0) {
             return "0".toBigInteger()
         }
-        if(possibleEvals.any { x -> _performOperation(parameters, x, parameters.lastIndex) == result }) {
+        if (possibleEvals.any { x -> _performOperation(parameters, x, parameters.lastIndex) == result }) {
             return result
         }
         return "0".toBigInteger()
@@ -96,16 +98,15 @@ class Day7 : AoCSolution() {
 
     private fun _performOperation(parameters: List<BigInteger>, operations: List<String>, maxIndex: Int): BigInteger {
         var result = parameters[0]
-        for(i in 1..maxIndex) {
-            when(operations[i-1]) {
+        for (i in 1..maxIndex) {
+            when (operations[i - 1]) {
                 "+" -> result += parameters[i]
                 "*" -> result *= parameters[i]
-                "||" ->  result = (result.toString()+parameters[i].toString()).toBigInteger()
+                "||" -> result = (result.toString() + parameters[i].toString()).toBigInteger()
             }
         }
         return result
     }
-
 
 
 }
