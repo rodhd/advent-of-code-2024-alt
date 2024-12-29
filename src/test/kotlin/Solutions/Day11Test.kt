@@ -11,7 +11,7 @@ class Day11Test {
 
     @Test
     fun calculateFirst() {
-        val expected = 55312
+        val expected = "55312".toBigInteger()
         val input = day11Test.readInputAsString()
         assertEquals(expected, day11Test.CalculateFirst(input))
     }
