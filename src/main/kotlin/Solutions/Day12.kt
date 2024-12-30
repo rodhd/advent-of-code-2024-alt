@@ -15,20 +15,6 @@ class Day12 : AoCSolution() {
         val fields: MutableList<Pair<String, Set<Point>>> = emptyList<Pair<String,Set<Point>>>().toMutableList()
     )
 
-    private val UP = Point(-1,0)
-    private val DOWN = Point(1,0)
-    private val RIGHT = Point(0,1)
-    private val LEFT = Point(0, -1)
-    private val DIRECTIONS = listOf(UP, DOWN, RIGHT, LEFT)
-
-    private fun Point.add(point: Point): Point {
-        return Point(this.x + point.x, this.y + point.y)
-    }
-
-    private fun _isValidPosition(input: List<String>, position: Point): Boolean {
-        return position.x in 0..input.lastIndex && position.y in 0..input.first().lastIndex
-    }
-
     private fun _getValue(region: Region, position: Point): String {
         return region.input[position.x][position.y].toString()
     }
@@ -81,7 +67,7 @@ class Day12 : AoCSolution() {
         region.unvisitedLocations.remove(position)
         for(d in DIRECTIONS) {
             val newPos = position.add(d)
-            if(_isValidPosition(region.input, newPos)) {
+            if(isValidPosition(region.input, newPos)) {
                 val newValue = _getValue(region, newPos)
                 if (newValue == fieldType && region.unvisitedLocations.contains(newPos)) {
                     result.addAll(_exploreRegion(region, newPos, fieldType))

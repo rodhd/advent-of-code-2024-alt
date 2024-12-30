@@ -1,5 +1,7 @@
 package org.example.Common
 
+import java.awt.Point
+
 abstract class AoCSolution (){
 
     abstract val day: String
@@ -14,4 +16,22 @@ abstract class AoCSolution (){
 
     fun readInputAsListOfLines(): List<String>
             = this.javaClass.getResourceAsStream("/inputs/input-$day.txt")?.bufferedReader()?.readLines() ?: listOf("not used")
+
+    val UP = Point(-1,0)
+    val DOWN = Point(1,0)
+    val RIGHT = Point(0,1)
+    val LEFT = Point(0, -1)
+    val DIRECTIONS = listOf(UP, DOWN, RIGHT, LEFT)
+
+    fun Point.add(point: Point): Point {
+        return Point(this.x + point.x, this.y + point.y)
+    }
+
+    fun isValidPosition(input: List<String>, position: Point): Boolean {
+        return position.x in 0..input.lastIndex && position.y in 0..input.first().lastIndex
+    }
+
+    fun isValidPosition(input: List<List<Any>>, position: Point): Boolean {
+        return position.x in 0..input.lastIndex && position.y in 0..input.first().lastIndex
+    }
 }
