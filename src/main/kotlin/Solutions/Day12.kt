@@ -2,8 +2,6 @@ package org.example.Solutions
 
 import org.example.Common.AoCSolution
 import java.awt.Point
-import java.math.BigInteger
-import javax.swing.text.Position
 
 class Day12 : AoCSolution() {
     override val day: String
@@ -67,7 +65,7 @@ class Day12 : AoCSolution() {
         region.unvisitedLocations.remove(position)
         for(d in DIRECTIONS) {
             val newPos = position.add(d)
-            if(isValidPosition(region.input, newPos)) {
+            if(isValidPositionString(region.input, newPos)) {
                 val newValue = _getValue(region, newPos)
                 if (newValue == fieldType && region.unvisitedLocations.contains(newPos)) {
                     result.addAll(_exploreRegion(region, newPos, fieldType))

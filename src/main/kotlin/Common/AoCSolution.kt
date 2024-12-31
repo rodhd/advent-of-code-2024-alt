@@ -27,7 +27,7 @@ abstract class AoCSolution (){
         return Point(this.x + point.x, this.y + point.y)
     }
 
-    fun isValidPosition(input: List<String>, position: Point): Boolean {
+    fun isValidPositionString(input: List<String>, position: Point): Boolean {
         return position.x in 0..input.lastIndex && position.y in 0..input.first().lastIndex
     }
 
